@@ -1,0 +1,47 @@
+<!-- Spencer Chinn -->
+<!-- stchinn@ucsc.edu -->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Paint Program</title>
+    </head>
+
+    <body onload="main()">
+        <canvas id="webgl" width="400" height="400">
+            Please use the browser supporting "canvas"
+        </canvas>
+
+        <p id="numdot">  </p>
+
+        <p>
+        <button type="button" id="clearButton">Clear</button>
+        <p>
+
+        <p>
+        Yellow <input type="range" min="-45" max="45" value="0" class="slider" id="yellowSlide">    
+        <p>
+        <p>
+        Magenta <input type="range" min="-45" max="45" value="0" class="slider" id="magentaSlide">
+        <p>
+        Camera Angle <input type="range" min="0" max="360" value="5" class="slider" id="angleSlide">    
+        <p>
+        Animation
+        <button type="button" id="AnimationYellowOnButton">Animation On</button>   
+        <button type="button" id="AnimationYellowOffButton">Animation On</button>         
+
+        <button type="button" onclick="drawUFOPicture()">Traveling...</button>
+        <button type="button" onclick="drawAnimatedUFOPicture()">Hey, a human!</button>
+
+        <script src="../lib/webgl-utils.js"></script>
+        <script src="../lib/webgl-debug.js"></script>
+        <script src="../lib/cuon-utils.js"></script>
+        <script src="Picture.js"></script>
+        <script src="Circle.js"></script>
+        <script src="Cube.js"></script>
+        <script src="Triangle.js"></script>
+        <script src="Point.js"></script>
+        <script src="asg2.js"></script>
+        <script src="../lib/cuon-matrix-cse160.js"></script>
+    </body>
+</html>
