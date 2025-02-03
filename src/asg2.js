@@ -1,11 +1,15 @@
 // Based on ColoredPoints.js (c) 2012 Matsuda
 // Vertex Shader Program
+// Used chat gpt to help debug and get a basic idea before writing code (helped a lot for click rotate)
+// Grabbed stats from example lab code
+
 var VSHADER_SOURCE = `
     attribute vec4 a_Position;
     uniform mat4 u_ModelMatrix;
     uniform mat4 u_GlobalRotateMatrix;
+    uniform mat4 u_MouseRotateMatrix;
     void main() {
-        gl_Position = u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
+        gl_Position = u_MouseRotateMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     }`
 
 var FSHADER_SOURCE = `
@@ -23,6 +27,7 @@ let u_FragColor;
 let u_Size;
 let u_ModelMatrix;
 let u_GlobalRotateMatrix;
+let u_MouseRotateMatrix;
 
 function setupWebGL() {
     // Retrieve <canvas> element
@@ -73,37 +78,54 @@ function connectVariablesToGLSL() {
         return;
     }
 
+    // Get the storage location u_MouseRotateMatrix
+    u_MouseRotateMatrix = gl.getUniformLocation(gl.program, 'u_MouseRotateMatrix');
+    if (!u_MouseRotateMatrix) {
+        console.log('Failed to get the storage location of u_MouseRotateMatrix');
+        return;
+    }
+
     // Set an initial value for this matrix to identify
     var identityM = new Matrix4();
     gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
 }
 
-// Constants
-const POINT = 0;
-const TRIANGLE = 1;
-const CIRCLE = 2;
-
 // Globals related to UI elements
-let g_selectedColor = [1.0, 1.0, 1.0, 1.0];
-let g_selectedSize = 10.0;
-let g_selectedType=POINT;
-let g_globalAngle=0;
-let g_yellowAngle=0;
-let g_magentaAngle=0;
+let g_globalXAngle=0;
+let g_globalYAngle=0;
+let g_globalZAngle=0;
+let g_tailAngle=0;
+let g_2ndTailAngle=0;
+let g_3rdTailAngle=0;
+let g_4thTailAngle=0;
+let g_Animation=false;
+let g_1stLegAngle=0;
+let g_2ndLegAngle=0;
 
 // Set up actions for the HTML UI elements
 function addActionsForHTMLUI() {
 
-    // Button Events (Shape Type)
-    document.getElementById('clearButton').onclick = function() { g_shapesList = []; clearAllTimeouts(); renderAllShapes(); };
+    // Button Events
+    document.getElementById('AnimationOnButton').onclick = function() { g_Animation=true };
+    document.getElementById('AnimationOffButton').onclick = function() { g_Animation=false };
+    
 
     // Slider Events
-    document.getElementById('magentaSlide').addEventListener('mousemove', function() { g_magentaAngle = this.value; renderAllShapes(); });
-    document.getElementById('yellowSlide').addEventListener('mousemove', function() { g_yellowAngle = this.value; renderAllShapes(); });
+    document.getElementById('4thTailSlide').addEventListener('mousemove', function() { g_4thTailAngle = this.value; renderScene(); });
+    document.getElementById('3rdTailSlide').addEventListener('mousemove', function() { g_3rdTailAngle = this.value; renderScene(); });
+    document.getElementById('2ndTailSlide').addEventListener('mousemove', function() { g_2ndTailAngle = this.value; renderScene(); });
+    document.getElementById('tailBaseSlide').addEventListener('mousemove', function() { g_tailAngle = this.value; renderScene(); });
 
     // Camera angle slider event
-    document.getElementById('angleSlide').addEventListener('mousemove', function() { g_globalAngle = this.value; renderAllShapes(); });
+    document.getElementById('xAngleSlide').addEventListener('mousemove', function() { g_globalXAngle = this.value; renderScene(); });
+    document.getElementById('yAngleSlide').addEventListener('mousemove', function() { g_globalYAngle = this.value; renderScene(); });
 }
+
+var stats = new Stats();
+stats.dom.style.left = "auto";
+stats.dom.style.right = "0";
+stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+document.body.appendChild(stats.dom);
 
 function main() {
 
@@ -117,13 +139,12 @@ function main() {
     // Register function (event handler) to be called on a mouse press
     canvas.onmousedown = click;
     canvas.onmousemove = function(ev) { if(ev.buttons == 1) { click(ev) } };
+    canvas.onmouseup = click;
+    canvas.onmouseout = click;
 
     // Set the color for clearing <canvas>
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
-    //gl.clear(gl.COLOR_BUFFER_BIT);
-    // Render
-    //renderAllShapes();
     requestAnimationFrame(tick);
 }
 
@@ -132,64 +153,83 @@ var g_seconds=performance.now()/1000.0 - g_startTime;
 
 // called by browser repeatedly whenever its time
 function tick() {
+    stats.begin();
     // Save the current time
     g_seconds = performance.now()/1000.0 - g_startTime;
-    console.log(g_seconds);
+    //console.log(g_seconds);
+
+    // Update animation angles
+    updateAnimationAngle();
 
     // Draw Everything
-    renderAllShapes();
-
+    renderScene();
+    
+    stats.end();
     // Tell the browser to update again when it has time
     requestAnimationFrame(tick);
 }
 
-let lastPosition;
-var g_shapesList = [];
+// Updates the angle of everything if currently animated
+function updateAnimationAngle() {
+    if (g_Animation) {
+        // tail animation
+        g_tailAngle = (10*Math.sin(g_seconds));
+        g_2ndTailAngle = (2.5*Math.sin(g_seconds));
+        g_3rdTailAngle = (2.5*Math.sin(g_seconds));
+        g_4thTailAngle = (2.5*Math.sin(g_seconds));
+        g_5thTailAngle = (2.5*Math.sin(g_seconds));
 
-function click(ev) {
-    // Extract the event click and return it to WebGL coordinates
-    [x,y] = convertCoordinatesEventToGL(ev);
-
-    let point;
-    if (g_selectedType==POINT) {
-        point = new Point();
-    } else if (g_selectedType==TRIANGLE) {
-        point = new Triangle();
-    } else if (g_selectedType==CIRCLE) {
-        point = new Circle();
-        point.segments = g_selectedSegments;
+        // leg animation
+        g_1stLegAngle = (5*Math.sin(g_seconds * 8));
+        g_2ndLegAngle = (-5*Math.sin(g_seconds * 8));
     }
-    point.position=[x,y];
-    point.color=g_selectedColor.slice();
-    point.size=g_selectedSize;
-
-    g_shapesList.push(point);
-
-    // Draw every shape that is supposed to be in the canvas
-    renderAllShapes();
 }
 
-// Extract the event click and return it to WebGL coordinates
-function convertCoordinatesEventToGL(ev) {
-    var x = ev.clientX; // the x coordinate of a mouse pointer
-    var y = ev.clientY; // the y coordinate of a mouse pointer
-    var rect = ev.target.getBoundingClientRect();
+let dragOn = false;
+let previousMousePosition = { x: 0, y: 0 };
 
-    x = ((x - rect.left) - canvas.width/2)/(canvas.width/2);
-    y = (canvas.height/2 - (y - rect.top))/(canvas.height/2);
+function click(ev) {
+    if (ev.type === 'mousedown') {
+        dragOn = true;
+        previousMousePosition = { x: ev.clientX, y: ev.clientY };
+    } else if (ev.type === 'mousemove' && dragOn) {
+        var xRotate = ev.clientX - previousMousePosition.x;
+        var yRotate = ev.clientY - previousMousePosition.y;
 
-    return([x,y]);
+        // console.log("x:" + xRotate, "y:" + yRotate);
+        rotateScene(xRotate, yRotate);
+
+        // Update the previous mouse position for the next move
+        previousMousePosition = { x: ev.clientX, y: ev.clientY };
+    } else if (ev.type === 'mouseup' || ev.type === 'mouseout') {
+        dragOn = false;
+    }
+}
+
+let rotateSensitivity = 0.8;
+let globalx = 0;
+let globaly = 0;
+
+function rotateScene(x, y) {
+    globalx += x;
+    globaly += y
 }
 
 // Draw every shape that is supposed to be in the canvas
-function renderAllShapes() {
+function renderScene() {
 
     // Check the time at the start of this function
     var startTime = performance.now();
 
     // Pass the matrix to u_ModelMatrix attribute
-    var u_globalRotMat = new Matrix4().rotate(g_globalAngle, 0, 1, 0);
+    var u_globalRotMat = new Matrix4().rotate(g_globalXAngle, 0, 1, 0);
+    u_globalRotMat = u_globalRotMat.rotate(-g_globalYAngle, 1, 0, 0);
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, u_globalRotMat.elements);
+
+    // trying to rotate with mouse
+    var u_MouseRotMat = new Matrix4().rotate(-globalx * rotateSensitivity, 0, 1, 0);
+    u_MouseRotMat = u_MouseRotMat.rotate(-globaly * rotateSensitivity, 1, 0, 0);
+    gl.uniformMatrix4fv(u_MouseRotateMatrix, false, u_MouseRotMat.elements);
 
     // Clear <canvas>
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -197,33 +237,147 @@ function renderAllShapes() {
 
     // Draw the body cube
     var body = new Cube();
-    body.color = [1.0, 0.0, 0.0, 1.0];
-    body.matrix.translate(-0.25, -0.75, 0.0);
-    body.matrix.rotate(-5, 1, 0, 0);
-    body.matrix.scale(0.5, 0.3, 0.5);
+    body.color = [221/255, 212/255, 165/255, 1.0];
+    body.matrix.translate(-0.2, -0.25, -0.25);
+    body.matrix.scale(0.3, 0.2, 0.6);
     body.render();
 
-    // Draw a left arm
-    var leftArm = new Cube();
-    leftArm.color = [1,1,0,1];
-    leftArm.matrix.setTranslate(0.0, -.5, 0.0);
-    leftArm.matrix.rotate(-5, 0.0, 0.0, 1.0);
-    leftArm.matrix.rotate(45*Math.sin(g_seconds), 0, 0, 1);
-    var yellowCoordinateMat = new Matrix4(leftArm.matrix);
-    leftArm.matrix.scale(0.25, 0.7, 0.5);
-    leftArm.matrix.translate(-0.5, 0, 0);
-    leftArm.render();
+    // Draw the tail cube
+    var tail = new Cube();
+    tail.color = [201/255, 192/255, 145/255, 1.0];
+    tail.matrix.translate(-0.175, -0.175, 0.3);
+    tail.matrix.rotate(-25, 1, 0, 0);
+    tail.matrix.rotate(g_tailAngle, 1, 0, 0);
+    var tailCoordinates = new Matrix4(tail.matrix);
+    tail.matrix.scale(0.25, 0.1, 0.35);
+    tail.render();
 
-    // Test box
-    var box = new Cube();
-    box.color = [1,0,1,1];
-    box.matrix = yellowCoordinateMat;
-    box.matrix.translate(0, 0.65, 0.0);
-    box.matrix.rotate(g_magentaAngle, 0.0, 0.0, 1.0);
-    box.matrix.scale(0.3, 0.3, 0.3);
-    box.matrix.translate(-0.5, 0, -0.001);
-    box.render();
+    // Draw the 2nd tail cube
+    var tail2 = new Cube();
+    tail2.color = [211/255, 202/255, 155/255, 1.0];
+    tail2.matrix = tailCoordinates;
+    tail2.matrix.translate(0.0165, 0.025, 0.35);
+    tail2.matrix.rotate(-40, 1, 0, 0);
+    tail2.matrix.rotate(g_2ndTailAngle, 1, 0, 0);
+    var tail2Coordinates = new Matrix4(tail2.matrix);
+    tail2.matrix.scale(0.225, 0.08, 0.3);
+    tail2.render();
 
+    // Draw the 3rd tail cube
+    var tail3 = new Cube();
+    tail3.color = [211/255, 202/255, 155/255, 1.0];
+    tail3.matrix = tail2Coordinates;
+    tail3.matrix.translate(0.0165, -0.01, 0.3);
+    tail3.matrix.rotate(-40, 1, 0, 0);
+    tail3.matrix.rotate(g_3rdTailAngle, 1, 0, 0);
+    var tail3Coordinates = new Matrix4(tail3.matrix);
+    tail3.matrix.scale(0.2, 0.08, 0.25);
+    tail3.render();
+
+    // Draw the 4th tail cube
+    var tail4 = new Cube();
+    tail4.color = [211/255, 202/255, 155/255, 1.0];
+    tail4.matrix = tail3Coordinates;
+    tail4.matrix.translate(0.019, -0.01, 0.2);
+    tail4.matrix.rotate(-40, 1, 0, 0);
+    tail4.matrix.rotate(g_4thTailAngle, 1, 0, 0);
+    var tail4Coordinates = new Matrix4(tail4.matrix);
+    tail4.matrix.scale(0.15, 0.06, 0.2);
+    tail4.render();
+
+    // Draw the 5th tail cube
+    var tail5 = new Cube();
+    tail5.color = [211/255, 202/255, 155/255, 1.0];
+    tail5.matrix = tail4Coordinates;
+    tail5.matrix.translate(0.0165, -0.01, 0.2);
+    var tail5Coordinates = new Matrix4(tail4.matrix);
+    tail5.matrix.scale(0.125, 0.125, 0.125);
+    tail5.render();
+
+    // Draw stinger didnt finish
+    // var stinger = new Pyramid();
+    // stinger.color = [111/255, 102/255, 55/255, 1.0];
+    // stinger.matrix = tail5Coordinates;
+    // stinger.matrix.translate(0.017, -0.02, 0.2);
+    // stinger.matrix.rotate(45, 1, 0, 0);
+    // // stinger.matrix.scale(0.5, 0.5, 0.5);
+    // stinger.render();
+
+    // Draw the left claw
+    var claw2 = new Cube();
+    claw2.color = [201/255, 192/255, 145/255, 1.0];
+    claw2.matrix.translate(-0.35, -0.25, -0.45);
+    claw2.matrix.scale(0.2, 0.1, 0.3);
+    claw2.render();
+
+    // Draw the right claw
+    var claw1 = new Cube();
+    claw1.color = [201/255, 192/255, 145/255, 1.0];
+    claw1.matrix.translate(0, -0.25, -0.45);
+    claw1.matrix.scale(0.2, 0.1, 0.3);
+    claw1.render();
+
+    // Draw a left leg
+    var leg = new Cube();
+    leg.color = [221/255, 212/255, 165/255, 1.0];
+    leg.matrix.setTranslate(0.0, -0.15, 0.0);
+    leg.matrix.rotate(-15, 0.0, 0.0, 1.0);
+    leg.matrix.rotate(g_2ndLegAngle, 0.0, 0.0, 1.0);
+    //leg.matrix.rotate(g_1stLegAngle, 0.0, 1.0, 0.0);
+    leg.matrix.scale(0.4, 0.08, 0.08);
+    leg.render();
+
+    var leg2 = new Cube();
+    leg2.color = [221/255, 212/255, 165/255, 1.0];
+    leg2.matrix.setTranslate(0.0, -0.15, 0.0);
+    leg2.matrix.rotate(-15, 0.0, 0.0, 1.0);
+    leg2.matrix.rotate(g_1stLegAngle, 0.0, 0.0, 1.0);
+    leg2.matrix.rotate(-25, 0.0, 1.0, 0.0);
+    leg2.matrix.scale(0.4, 0.08, 0.08);
+    leg2.render();
+
+    var leg3 = new Cube();
+    leg3.color = [221/255, 212/255, 165/255, 1.0];
+    leg3.matrix.setTranslate(0.0, -0.15, 0.0);
+    leg3.matrix.rotate(-15, 0.0, 0.0, 1.0);
+    leg3.matrix.rotate(g_1stLegAngle, 0.0, 0.0, 1.0);
+    leg3.matrix.rotate(25, 0.0, 1.0, 0.0);
+    leg3.matrix.scale(0.4, 0.08, 0.08);
+    leg3.render();
+
+
+
+    var lleg = new Cube();
+    lleg.color = [221/255, 212/255, 165/255, 1.0];
+    lleg.matrix.setTranslate(0.0, -0.15, 0.0);
+    lleg.matrix.translate(-0.1, 0.0, 0.1);
+    lleg.matrix.rotate(180, 0.0, 1.0, 0.0);
+    lleg.matrix.rotate(-15, 0.0, 0.0, 1.0); // z angle 
+    lleg.matrix.rotate(g_1stLegAngle, 0.0, 0.0, 1.0);
+    lleg.matrix.scale(0.4, 0.08, 0.08);
+    lleg.render();
+
+    var lleg2 = new Cube();
+    lleg2.color = [221/255, 212/255, 165/255, 1.0];
+    lleg2.matrix.setTranslate(0.0, -0.15, 0.0);
+    lleg2.matrix.translate(-0.1, 0.0, 0.1);
+    lleg2.matrix.rotate(180, 0.0, 1.0, 0.0);
+    lleg2.matrix.rotate(-15, 0.0, 0.0, 1.0);
+    lleg2.matrix.rotate(g_2ndLegAngle, 0.0, 0.0, 1.0);
+    lleg2.matrix.rotate(-25, 0.0, 1.0, 0.0);
+    lleg2.matrix.scale(0.4, 0.08, 0.08);
+    lleg2.render();
+
+    var lleg3 = new Cube();
+    lleg3.color = [221/255, 212/255, 165/255, 1.0];
+    lleg3.matrix.setTranslate(0.0, -0.15, 0.0);
+    lleg3.matrix.translate(-0.1, 0.0, 0.1);
+    lleg3.matrix.rotate(180, 0.0, 1.0, 0.0);
+    lleg3.matrix.rotate(-15, 0.0, 0.0, 1.0);
+    lleg3.matrix.rotate(g_2ndLegAngle, 0.0, 0.0, 1.0);
+    lleg3.matrix.rotate(25, 0.0, 1.0, 0.0);
+    lleg3.matrix.scale(0.4, 0.08, 0.08);
+    lleg3.render();
 
     // Check the time at the end of the function, and show on web page
     var duration = performance.now() - startTime;

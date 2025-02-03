@@ -11,9 +11,7 @@ class Cube{
     // Render this shape
     render() {
         // Pass the position of a point to a_Position variable
-        //var xy = this.position;
         var rgba = this.color;
-        //var size = this.size;        
 
         // Pass the color of a point to u_FragColor variable
         gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);

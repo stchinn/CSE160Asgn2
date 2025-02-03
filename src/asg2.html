@@ -15,30 +15,34 @@
         <p id="numdot">  </p>
 
         <p>
-        <button type="button" id="clearButton">Clear</button>
-        <p>
+            Click to drag the viewpoint.
+        </p>
 
         <p>
-        Yellow <input type="range" min="-45" max="45" value="0" class="slider" id="yellowSlide">    
+        Tail Base <input type="range" min="-45" max="45" value="0" class="slider" id="tailBaseSlide">    
         <p>
+        2nd Tail Link<input type="range" min="-45" max="45" value="0" class="slider" id="2ndTailSlide">
         <p>
-        Magenta <input type="range" min="-45" max="45" value="0" class="slider" id="magentaSlide">
+        3rd Tail Link<input type="range" min="-45" max="45" value="0" class="slider" id="3rdTailSlide">
         <p>
-        Camera Angle <input type="range" min="0" max="360" value="5" class="slider" id="angleSlide">    
+        4th Tail Link<input type="range" min="-45" max="45" value="0" class="slider" id="4thTailSlide">
         <p>
-        Animation
-        <button type="button" id="AnimationYellowOnButton">Animation On</button>   
-        <button type="button" id="AnimationYellowOffButton">Animation On</button>         
+        X Camera Angle <input type="range" min="-180" max="180" value="5" class="slider" id="xAngleSlide">    
+        <p>
+        Y Camera Angle <input type="range" min="-180" max="180" value="5" class="slider" id="yAngleSlide">      
+        <p>
+        Animation: 
+        <button type="button" id="AnimationOnButton">On</button>   
+        <button type="button" id="AnimationOffButton">Off</button>         
 
-        <button type="button" onclick="drawUFOPicture()">Traveling...</button>
-        <button type="button" onclick="drawAnimatedUFOPicture()">Hey, a human!</button>
-
+        <script src="https://cdn.jsdelivr.net/npm/stats.js@0.17.0/build/stats.min.js"></script>
         <script src="../lib/webgl-utils.js"></script>
         <script src="../lib/webgl-debug.js"></script>
         <script src="../lib/cuon-utils.js"></script>
-        <script src="Picture.js"></script>
         <script src="Circle.js"></script>
         <script src="Cube.js"></script>
+        <script src="Cone.js"></script>
+        <script src="Pyramid.js"></script>
         <script src="Triangle.js"></script>
         <script src="Point.js"></script>
         <script src="asg2.js"></script>
