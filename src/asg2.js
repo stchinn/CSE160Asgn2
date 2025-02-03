@@ -237,7 +237,7 @@ function renderScene() {
 
     // Draw the body cube
     var body = new Cube();
-    body.color = [221/255, 212/255, 165/255, 1.0];
+    body.color = [180/255, 160/255, 118/255, 1.0];
     body.matrix.translate(-0.2, -0.25, -0.25);
     body.matrix.scale(0.3, 0.2, 0.6);
     body.render();
@@ -294,25 +294,25 @@ function renderScene() {
     tail5.matrix.scale(0.125, 0.125, 0.125);
     tail5.render();
 
-    // Draw stinger didnt finish
-    // var stinger = new Pyramid();
-    // stinger.color = [111/255, 102/255, 55/255, 1.0];
-    // stinger.matrix = tail5Coordinates;
-    // stinger.matrix.translate(0.017, -0.02, 0.2);
-    // stinger.matrix.rotate(45, 1, 0, 0);
-    // // stinger.matrix.scale(0.5, 0.5, 0.5);
-    // stinger.render();
+    // Draw stinger
+    var stinger = new Pyramid();
+    stinger.color = [111/255, 102/255, 55/255, 1.0];
+    stinger.matrix = tail5Coordinates;
+    stinger.matrix.translate(0.0, -0.8, 0.0);
+    stinger.matrix.rotate(45, 1, 0, 0);
+    // stinger.matrix.scale(0.5, 0.5, 0.5);
+    stinger.render();
 
     // Draw the left claw
     var claw2 = new Cube();
-    claw2.color = [201/255, 192/255, 145/255, 1.0];
-    claw2.matrix.translate(-0.35, -0.25, -0.45);
+    claw2.color = [173/255, 150/255, 102/255, 1.0];
+    claw2.matrix.translate(-0.3, -0.25, -0.45);
     claw2.matrix.scale(0.2, 0.1, 0.3);
     claw2.render();
 
     // Draw the right claw
     var claw1 = new Cube();
-    claw1.color = [201/255, 192/255, 145/255, 1.0];
+    claw1.color = [173/255, 150/255, 102/255, 1.0];
     claw1.matrix.translate(0, -0.25, -0.45);
     claw1.matrix.scale(0.2, 0.1, 0.3);
     claw1.render();
